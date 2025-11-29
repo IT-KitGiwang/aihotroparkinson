@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản lý RAG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Quản lý RAG Files</h1>
+            <p class="text-gray-600">Upload và quản lý các file tài liệu cho hệ thống RAG</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Upload File Mới</h2>
+            <form action="/admin/upload" method="post" enctype="multipart/form-data" class="mb-6">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input type="file" name="file" accept=".pdf,.docx,.txt" class="hidden" id="file-input" required>
+                    <label for="file-input" class="cursor-pointer">
+                        <div class="text-gray-500 mb-2">
+                            <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg">Chọn file PDF, DOCX hoặc TXT để upload</p>
+                        <p class="text-sm text-gray-400">Chấp nhận file .pdf, .docx, .txt</p>
+                    </label>
+                </div>
+                <button type="submit" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    Upload
+                </button>
+            </form>
+
+            <h2 class="text-xl font-semibold mb-4">Danh sách Files</h2>
+            {% if files %}
+                <div class="space-y-2">
+                    {% for file in files %}
+                        <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-800">{{ file }}</span>
+                            <form action="/admin/delete/{{ file }}" method="post" class="inline" onsubmit="return confirm('Bạn có chắc muốn xóa file này?')">
+                                <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center py-4">Chưa có file nào được upload.</p>
+            {% endif %}
+
+            <div class="mt-6 text-center">
+                <a href="/" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    Quay lại trang chính
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle file input display
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const label = e.target.nextElementSibling;
+                label.innerHTML = `
+                    <div class="text-green-600 mb-2">
+                        <svg class="mx-auto h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg">${file.name}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
