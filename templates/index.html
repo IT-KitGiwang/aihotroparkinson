@@ -3,480 +3,823 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chẩn đoán Parkinson</title>
+    <title>Hệ thống Hỗ trợ Phát hiện Sớm Parkinson</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Thêm một số kiểu tùy chỉnh */
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #ecfeff 100%);
             min-height: 100vh;
         }
-        /* Tùy chỉnh thanh cuộn */
+        
         .scrollbar-thin {
             scrollbar-width: thin;
             scrollbar-color: #9ca3af #f8f9fa;
         }
-        .scrollbar-thin::-webkit-scrollbar {
-            width: 8px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-            background: #9ca3af;
-            border-radius: 10px;
-        }
-        /* Hiệu ứng cho input chat */
-        #chat-input:focus {
-            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
-            border-color: #14b8a6;
-        }
-        /* Checkbox lớn hơn cho người cao tuổi */
+        .scrollbar-thin::-webkit-scrollbar { width: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #f8f9fa; border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
+        
         input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             flex-shrink: 0;
+            accent-color: #0d9488;
         }
-        /* Animation cho loading */
-        @keyframes pulse-gentle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        
+        @keyframes recording-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
         }
-        .animate-pulse-gentle {
-            animation: pulse-gentle 2s ease-in-out infinite;
+        .recording-animation { animation: recording-pulse 1s ease-in-out infinite; }
+        
+        .prose-custom { line-height: 1.9; font-size: 1rem; }
+        .prose-custom p { margin-bottom: 0.75rem; }
+        .prose-custom strong { color: #0f766e; font-weight: 600; }
+        .prose-custom ul, .prose-custom ol { margin-left: 1.25rem; margin-top: 0.5rem; margin-bottom: 0.75rem; }
+        .prose-custom li { margin-bottom: 0.5rem; padding-left: 0.25rem; }
+        
+        .header-gradient { background: linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #0284c7 100%); }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
-        /* Cải thiện prose styling */
-        .prose-custom {
-            line-height: 1.8;
+        
+        .voice-btn { transition: all 0.3s ease; }
+        .voice-btn:hover { transform: scale(1.05); }
+        .voice-btn.recording { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; }
+        
+        .feature-card { transition: all 0.3s ease; }
+        .feature-card:hover { transform: translateY(-4px); }
+        
+        .youtube-embed {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
         }
-        .prose-custom p {
-            margin-bottom: 0.75rem;
+        .youtube-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
         }
-        .prose-custom strong {
-            color: #0f766e;
-            font-weight: 600;
-        }
-        .prose-custom ul, .prose-custom ol {
-            margin-left: 1.25rem;
-            margin-top: 0.5rem;
-            margin-bottom: 0.75rem;
-        }
-        .prose-custom li {
-            margin-bottom: 0.5rem;
-            padding-left: 0.25rem;
+        
+        .symptom-group { transition: all 0.3s ease; }
+        .symptom-group:hover { background-color: rgba(20, 184, 166, 0.05); }
+        
+        #tts-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body class="text-gray-800">
-    <div class="container mx-auto p-4 lg:p-8">
-
-    
-
-        <div class="grid lg:grid-cols-3 gap-8 items-start">
-            
-            <div class="lg:col-span-1 bg-white rounded-2xl shadow-xl p-6 flex flex-col border border-gray-100">
-                <h2 class="text-2xl font-bold mb-5 text-teal-800 flex items-center">
-                    <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-stethoscope text-teal-600"></i>
-                    </div>
-                    <span>Khung Chẩn đoán Lâm sàng</span>
-                </h2>
-                
-                <div class="mb-5 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 rounded-lg shadow-sm">
-                    <h3 class="text-base font-bold text-yellow-800 mb-2 flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2"></i> Lưu ý quan trọng
-                    </h3>
-                    <p class="text-base text-yellow-700 leading-relaxed">Đây là công cụ <strong>hỗ trợ sàng lọc</strong>, không thay thế chẩn đoán của bác sĩ. Vui lòng đến gặp chuyên khoa Thần kinh để được thăm khám chính xác.</p>
-                </div>
-
-                <form id="symptomForm" class="space-y-6 flex-1 overflow-y-auto pr-2 scrollbar-thin">
-                    
-                    <fieldset class="border-2 border-teal-100 rounded-xl p-5 bg-gradient-to-br from-teal-50/30 to-white hover:border-teal-200 transition-all duration-200">
-                        <legend class="font-bold text-lg text-teal-800 px-3 bg-white">1. Triệu chứng Vận động</legend>
-                        <div class="space-y-4 mt-3">
-                            <h4 class="font-semibold text-base text-teal-700 border-b border-teal-100 pb-2">Run (Tremor)</h4>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Run khi tay đang thư giãn (run khi nghỉ)" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Run khi tay đang thư giãn (run lúc nghỉ)</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Run bắt đầu ở một bên cơ thể" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Run bắt đầu ở MỘT bên cơ thể</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Run kiểu 'vê thuốc'" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Run giống kiểu "vê thuốc"</span>
-                            </label>
-                            
-                            <div class="border-t border-gray-200 my-3"></div>
-                            <h4 class="font-semibold text-base text-teal-700 border-b border-teal-100 pb-2">Chậm vận động (Bradykinesia)</h4>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Khó khăn khi làm việc vặt (cài cúc áo, cắt thức ăn)" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Khó làm việc vặt (cài cúc, cắt thức ăn)</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Chữ viết nhỏ dần (Micrographia)" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Chữ viết tay nhỏ dần</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Nét mặt cứng, ít biểu cảm" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Nét mặt ít biểu cảm ("mặt nạ")</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Khó đứng dậy khỏi ghế hoặc trở mình" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Khó đứng dậy khỏi ghế, khó trở mình</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Bước đi ngắn, kéo lê chân, giảm vung tay" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Bước đi ngắn, kéo lê, ít vung tay</span>
-                            </label>
-
-                            <div class="border-t border-gray-200 my-3"></div>
-                            <h4 class="font-semibold text-base text-teal-700 border-b border-teal-100 pb-2">Cứng đờ (Rigidity)</h4>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Cảm thấy cơ bắp căng cứng (cổ, vai, hông)" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Cơ bắp căng cứng (cổ, vai, hông)</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Bị đau cơ hoặc chuột rút không rõ nguyên nhân" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Đau cơ, chuột rút không rõ nguyên nhân</span>
-                            </label>
-
-                            <div class="border-t border-gray-200 my-3"></div>
-                            <h4 class="font-semibold text-base text-teal-700 border-b border-teal-100 pb-2">Mất ổn định Tư thế</h4>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Dễ mất thăng bằng, hay bị vấp ngã" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Dễ mất thăng bằng, hay bị vấp ngã</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-teal-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Dáng đi đổ người về phía trước" class="rounded text-teal-600 mt-1">
-                                <span class="leading-relaxed">Dáng đi đổ người về phía trước</span>
-                            </label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset class="border-2 border-blue-100 rounded-xl p-5 bg-gradient-to-br from-blue-50/30 to-white hover:border-blue-200 transition-all duration-200">
-                        <legend class="font-bold text-lg text-blue-800 px-3 bg-white">2. Triệu chứng Phi-vận động</legend>
-                        <div class="space-y-4 mt-3">
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Giảm hoặc mất khứu giác" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">Giảm hoặc mất khả năng ngửi</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Rối loạn giấc ngủ REM (la hét, cử động mạnh khi ngủ)" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">La hét, cử động mạnh khi ngủ</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Bị táo bón nghiêm trọng, kéo dài" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">Táo bón nghiêm trọng, kéo dài</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Giọng nói nhỏ đi, nói lắp, hoặc khàn" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">Giọng nói nhỏ đi, khàn tiếng</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Thay đổi tâm trạng (trầm cảm, lo âu)" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">Trầm cảm, lo lắng không rõ nguyên nhân</span>
-                            </label>
-                            <label class="flex items-start space-x-3 text-base cursor-pointer hover:bg-blue-50/50 p-2 rounded-lg transition-colors">
-                                <input type="checkbox" value="Chóng mặt, choáng váng khi đứng dậy" class="rounded text-blue-600 mt-1">
-                                <span class="leading-relaxed">Chóng mặt khi đứng dậy đột ngột</span>
-                            </label>
-                        </div>
-                    </fieldset>
-                </form>
-
-                <button type="submit" form="symptomForm" class="w-full mt-5 bg-gradient-to-r from-teal-600 to-teal-700 text-white py-4 px-4 rounded-xl hover:from-teal-700 hover:to-teal-800 transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl">
-                    <i class="fas fa-search-plus mr-2"></i>
-                    Phân tích Triệu chứng
-                </button>
-                
-                <div id="symptom-result" class="mt-5"></div>
-            </div>
-
-            <div class="lg:col-span-2 flex flex-col gap-8">
-                
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <h2 class="text-2xl font-bold mb-5 text-blue-800 flex items-center">
-                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-camera-retro text-blue-600"></i>
-                        </div>
-                        <span>Dự đoán qua Hình ảnh Vẽ tay</span>
-                    </h2>
-                    
-                    <form id="upload-form" action="/predict" method="post" enctype="multipart/form-data" class="space-y-5">
-                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 cursor-pointer bg-gradient-to-br from-gray-50 to-white">
-                            <input type="file" name="image" accept="image/*" class="hidden" id="file-input" required>
-                            <label for="file-input" class="cursor-pointer block" id="file-label">
-                                <div class="text-gray-400 mb-3">
-                                    <svg class="mx-auto h-16 w-16" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-lg font-semibold text-gray-700 mb-1">Kéo thả hoặc Bấm để chọn ảnh</p>
-                                <p class="text-sm text-gray-500">Hỗ trợ định dạng PNG, JPG, JPEG</p>
-                            </label>
-                        </div>
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed" id="submit-btn">
-                            <i class="fas fa-magic mr-2"></i>
-                            Phân tích Ảnh
-                        </button>
-                    </form>
-                    <div id="result" class="mt-5"></div>
-                </div>
-
-                <div class="bg-white rounded-2xl shadow-xl p-6 flex flex-col border border-gray-100" style="height: 650px;">
-                    <h2 class="text-2xl font-bold mb-5 text-purple-800 flex items-center border-b border-gray-200 pb-4">
-                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-comments text-purple-600"></i>
-                        </div>
-                        <span>Trò chuyện với Trợ lý AI</span>
-                    </h2>
-
-                    <div id="chat-messages" class="flex-1 overflow-y-auto mb-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl scrollbar-thin" style="max-height: 500px;">
-                        <div class="flex justify-start mb-4">
-                            <div class="bg-white text-gray-800 rounded-2xl px-5 py-3 max-w-md shadow-md border border-gray-100" style="border-bottom-left-radius: 0.5rem;">
-                                <div class="text-base leading-relaxed">Xin chào! Tôi là trợ lý AI. Bạn có câu hỏi gì về bệnh Parkinson không?</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <form id="chat-form" class="flex space-x-3">
-                        <input type="text" name="message" id="chat-input" placeholder="Nhập câu hỏi của bạn..." class="flex-1 border-2 border-gray-200 rounded-full px-6 py-3.5 text-base focus:outline-none focus:border-teal-500 shadow-sm bg-white" required>
-                        <button type="submit" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white w-14 h-14 rounded-full flex items-center justify-center hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md hover:shadow-lg flex-shrink-0">
-                            <i class="fas fa-paper-plane text-lg"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-        </div>
+    <!-- TTS Indicator -->
+    <div id="tts-indicator" class="hidden bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center">
+        <i class="fas fa-volume-up mr-2 animate-pulse"></i>
+        <span>Đang đọc...</span>
     </div>
 
-    <script>
-        // Handle file input display
-        const fileInput = document.getElementById('file-input');
-        const fileLabel = document.getElementById('file-label');
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                fileLabel.innerHTML = `
-                    <div class="text-green-600 mb-2">
-                        <svg class="mx-auto h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
+    <!-- HEADER -->
+    <header class="header-gradient text-white py-5 px-4 shadow-lg">
+        <div class="container mx-auto">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center">
+                    <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm">
+                        <i class="fas fa-brain text-3xl"></i>
                     </div>
-                    <p class="text-lg text-gray-800 font-medium">${file.name}</p>
-                `;
+                    <div>
+                        <h1 class="text-xl lg:text-2xl font-bold">Hệ thống Hỗ trợ Phát hiện Sớm Parkinson</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Global TTS Toggle -->
+                    <button id="global-tts-toggle" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg backdrop-blur-sm flex items-center transition-all" title="Bật/Tắt đọc tất cả câu trả lời">
+                        <i class="fas fa-volume-up mr-2" id="global-tts-icon"></i>
+                        <span class="text-sm" id="global-tts-text">Loa: BẬT</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="container mx-auto p-4 lg:p-6">
+        <!-- Warning Banner -->
+        <div class="mb-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-yellow-300 rounded-2xl shadow-md">
+            <div class="flex items-start">
+                <div class="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-yellow-800 text-lg mb-1">⚠️ Lưu ý Quan trọng</h3>
+                    <p class="text-yellow-700 text-sm leading-relaxed">
+                        Đây là công cụ <strong>hỗ trợ sàng lọc ban đầu</strong>, KHÔNG thay thế chẩn đoán của bác sĩ chuyên khoa Thần kinh. 
+                        Mọi thông tin chỉ mang tính tham khảo. <strong>KHÔNG tự ý sử dụng thuốc tại nhà</strong> mà không có chỉ định của bác sĩ.
+                        Nếu có triệu chứng nghi ngờ, vui lòng đến cơ sở y tế để được thăm khám chính xác.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid - 2 columns -->
+        <div class="grid lg:grid-cols-2 gap-6">
+            
+            <!-- LEFT COLUMN: Image + Symptoms Combined -->
+            <div class="space-y-6">
+                <!-- Image Upload Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100">
+                    <h2 class="text-lg font-bold mb-4 text-blue-800 flex items-center">
+                        <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-camera text-blue-600"></i>
+                        </div>
+                        <span>Bước 1: Tải ảnh Xoắn ốc</span>
+                    </h2>
+                    
+                    <form id="upload-form" class="space-y-4">
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer" id="drop-zone">
+                            <input type="file" name="image" accept="image/*" class="hidden" id="file-input">
+                            <label for="file-input" class="cursor-pointer block" id="file-label">
+                                <div class="text-gray-400 mb-2">
+                                    <i class="fas fa-cloud-upload-alt text-5xl"></i>
+                                </div>
+                                <p class="text-base font-semibold text-gray-700">Kéo thả hoặc Bấm để chọn ảnh</p>
+                                <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG - Ảnh vẽ xoắn ốc trên giấy A4</p>
+                            </label>
+                        </div>
+                        <div id="image-preview" class="hidden">
+                            <img id="preview-img" class="w-full h-48 object-contain rounded-lg bg-gray-100">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Symptom Checklist -->
+                <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100">
+                    <h2 class="text-lg font-bold mb-4 text-teal-800 flex items-center">
+                        <div class="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-clipboard-check text-teal-600"></i>
+                        </div>
+                        <span>Bước 2: Chọn Triệu chứng</span>
+                    </h2>
+                    
+                    <form id="symptomForm" class="space-y-4 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
+                        <!-- TRIỆU CHỨNG VẬN ĐỘNG CHÍNH -->
+                        <fieldset class="border-2 border-teal-200 rounded-xl p-4 bg-gradient-to-br from-teal-50/50 to-white symptom-group">
+                            <legend class="font-bold text-sm text-teal-800 px-2 bg-white rounded">🏃 Triệu chứng Vận động Chính</legend>
+                            <div class="space-y-2 mt-2">
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Run tay khi nghỉ ngơi (Resting Tremor) - run khi tay đang thư giãn, giảm khi cử động">
+                                    <span>Run tay khi nghỉ ngơi (giảm khi cử động)</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Run kiểu 'vê thuốc' (Pill-rolling tremor) - ngón cái và ngón trỏ cọ vào nhau">
+                                    <span>Run kiểu "vê thuốc" (ngón cái-ngón trỏ)</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Run bắt đầu ở một bên cơ thể (Asymmetric onset)">
+                                    <span>Run bắt đầu ở MỘT bên cơ thể</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Cứng đờ cơ bắp (Rigidity) - cảm giác cơ căng cứng ở cổ, vai, tay, chân">
+                                    <span>Cứng đờ cơ bắp (cổ, vai, tay, chân)</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Chậm vận động (Bradykinesia) - các động tác trở nên chậm chạp, khó khởi động">
+                                    <span>Chậm vận động, khó khởi động động tác</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-teal-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Mất thăng bằng tư thế (Postural Instability) - dễ ngã, khó giữ thăng bằng">
+                                    <span>Mất thăng bằng, dễ ngã</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- DẤU HIỆU VẬN ĐỘNG PHỤ -->
+                        <fieldset class="border-2 border-blue-200 rounded-xl p-4 bg-gradient-to-br from-blue-50/50 to-white symptom-group">
+                            <legend class="font-bold text-sm text-blue-800 px-2 bg-white rounded">🚶 Dấu hiệu Vận động Khác</legend>
+                            <div class="space-y-2 mt-2">
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Dáng đi shuffling - bước ngắn, kéo lê chân, ít vung tay">
+                                    <span>Bước đi ngắn, kéo lê chân, ít vung tay</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Freezing of gait - đột ngột 'đóng băng' không bước đi được">
+                                    <span>Đột ngột "đóng băng" không bước đi được</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Dáng đi đổ người về phía trước (Festinating gait)">
+                                    <span>Dáng đi đổ người về phía trước</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Chữ viết nhỏ dần (Micrographia) - chữ ngày càng nhỏ và khó đọc">
+                                    <span>Chữ viết nhỏ dần, khó đọc</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Nét mặt ít biểu cảm (Masked face/Hypomimia) - mặt như đeo mặt nạ">
+                                    <span>Nét mặt ít biểu cảm ("mặt nạ")</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-blue-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Khó làm các công việc tinh vi (cài cúc áo, buộc dây giày, cắt thức ăn)">
+                                    <span>Khó làm việc tinh vi (cài cúc, buộc dây)</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- TRIỆU CHỨNG PHI VẬN ĐỘNG -->
+                        <fieldset class="border-2 border-purple-200 rounded-xl p-4 bg-gradient-to-br from-purple-50/50 to-white symptom-group">
+                            <legend class="font-bold text-sm text-purple-800 px-2 bg-white rounded">🧠 Triệu chứng Phi-vận động</legend>
+                            <div class="space-y-2 mt-2">
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Giảm hoặc mất khứu giác (Hyposmia/Anosmia) - không ngửi được mùi">
+                                    <span>Giảm/mất khứu giác (không ngửi được)</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Rối loạn giấc ngủ REM (RBD) - la hét, đấm đá khi ngủ">
+                                    <span>La hét, đấm đá, cử động mạnh khi ngủ</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Táo bón mãn tính nghiêm trọng kéo dài nhiều năm">
+                                    <span>Táo bón mãn tính, kéo dài</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Giọng nói nhỏ, đơn điệu (Hypophonia) - khó nghe, thiếu ngữ điệu">
+                                    <span>Giọng nói nhỏ, đơn điệu, khó nghe</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Trầm cảm, lo âu không rõ nguyên nhân">
+                                    <span>Trầm cảm, lo âu không rõ nguyên nhân</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Chóng mặt khi đứng dậy (Orthostatic hypotension)">
+                                    <span>Chóng mặt khi đứng dậy đột ngột</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Suy giảm nhận thức nhẹ, hay quên">
+                                    <span>Hay quên, suy giảm nhận thức nhẹ</span>
+                                </label>
+                                <label class="flex items-center space-x-3 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded-lg">
+                                    <input type="checkbox" value="Tăng tiết mồ hôi hoặc da nhờn bất thường">
+                                    <span>Tăng tiết mồ hôi, da nhờn bất thường</span>
+                                </label>
+                            </div>
+                        </fieldset>
+                    </form>
+
+                    <!-- Combined Analysis Button -->
+                    <button type="button" id="combined-analysis-btn" class="w-full mt-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold text-lg shadow-lg hover:shadow-xl">
+                        <i class="fas fa-brain mr-2"></i>
+                        Phân tích Tổng hợp (Ảnh + Triệu chứng)
+                    </button>
+                </div>
+
+                <!-- Combined Result -->
+                <div id="combined-result" class="hidden"></div>
+            </div>
+
+            <!-- RIGHT COLUMN: Chatbot -->
+            <div class="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 flex flex-col" style="min-height: 700px;">
+                <h2 class="text-lg font-bold mb-4 text-purple-800 flex items-center border-b border-gray-200 pb-3">
+                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-robot text-purple-600"></i>
+                    </div>
+                    <span>Chatbot Tư vấn AI</span>
+                    <span class="ml-auto flex items-center text-xs font-normal space-x-2">
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                            <i class="fas fa-circle text-xs mr-1 animate-pulse"></i>24/7
+                        </span>
+                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                            <i class="fas fa-microphone mr-1"></i>Voice
+                        </span>
+                    </span>
+                </h2>
+
+                <!-- Chat Messages -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto mb-4 p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl scrollbar-thin" style="max-height: 480px;">
+                    <div class="flex justify-start mb-4">
+                        <div class="bg-white text-gray-800 rounded-2xl px-4 py-3 max-w-md shadow-md border border-gray-100" style="border-bottom-left-radius: 0.5rem;">
+                            <div class="flex items-center mb-2">
+                                <div class="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                                    <i class="fas fa-robot text-purple-600 text-xs"></i>
+                                </div>
+                                <span class="font-semibold text-purple-800 text-sm">Trợ lý AI Parkinson</span>
+                            </div>
+                            <div class="text-sm leading-relaxed">
+                                Xin chào! Tôi là trợ lý AI chuyên về bệnh Parkinson. Tôi có thể:
+                                <ul class="mt-2 space-y-1 text-gray-600">
+                                    <li><i class="fas fa-check text-green-500 mr-1"></i>Giải đáp thắc mắc về Parkinson</li>
+                                    <li><i class="fas fa-check text-green-500 mr-1"></i>Gợi ý video bài tập phục hồi</li>
+                                    <li><i class="fas fa-check text-green-500 mr-1"></i>Tư vấn chế độ sinh hoạt</li>
+                                </ul>
+                                <p class="mt-2 text-purple-600"><i class="fas fa-microphone mr-1"></i>Nhấn nút Micro để nói!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <form id="chat-form" class="flex space-x-2 items-center">
+                    <button type="button" id="voice-btn" class="voice-btn bg-gradient-to-r from-purple-600 to-purple-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0" title="Nhấn để nói">
+                        <i class="fas fa-microphone text-lg" id="voice-icon"></i>
+                    </button>
+                    
+                    <input type="text" name="message" id="chat-input" placeholder="Nhập câu hỏi hoặc nhấn Micro..." class="flex-1 border-2 border-gray-200 rounded-full px-5 py-3 text-base focus:outline-none focus:border-purple-400 shadow-sm">
+                    
+                    <button type="submit" class="bg-gradient-to-r from-teal-600 to-teal-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                        <i class="fas fa-paper-plane text-lg"></i>
+                    </button>
+                </form>
+                
+                <div id="voice-status" class="hidden mt-2 text-center">
+                    <div class="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
+                        <i class="fas fa-circle text-red-500 animate-pulse mr-2"></i>
+                        <span id="voice-status-text">Đang lắng nghe...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Section -->
+        <div class="mt-8 bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-5 text-red-700 flex items-center">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fab fa-youtube text-red-600"></i>
+                </div>
+                <span>Video Bài tập Phục hồi Chức năng</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-md">
+                    <div class="youtube-embed">
+                        <iframe src="https://www.youtube.com/embed/DS73cE9q79o" title="Bài tập cân bằng" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm text-gray-800">Cải thiện cân bằng và dáng đi</h3>
+                        <p class="text-xs text-gray-500 mt-1">Bài tập giúp cải thiện thăng bằng</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-md">
+                    <div class="youtube-embed">
+                        <iframe src="https://www.youtube.com/embed/bMcCqi6tllk" title="Đứng lên ngồi xuống" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm text-gray-800">Đứng lên ngồi xuống tại giường</h3>
+                        <p class="text-xs text-gray-500 mt-1">Tăng cường sức mạnh chân</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-md">
+                    <div class="youtube-embed">
+                        <iframe src="https://www.youtube.com/embed/ND5eAvEREmg" title="Xoay trở tại giường" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm text-gray-800">Xoay trở tại giường</h3>
+                        <p class="text-xs text-gray-500 mt-1">Cải thiện vận động khi nằm</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                <p class="text-yellow-800 text-sm flex items-start">
+                    <i class="fas fa-exclamation-triangle mr-2 mt-0.5"></i>
+                    <span><strong>Lưu ý An toàn:</strong> Thực hiện bài tập khi có người thân giám sát hoặc bám vào vị trí chắc chắn để tránh té ngã.</span>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 text-white py-5 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400 text-sm mb-2">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                Mọi thông tin trên đây chỉ mang tính tham khảo. KHÔNG tự ý sử dụng thuốc. Vui lòng đến cơ sở y tế để được thăm khám.
+            </p>
+            <p class="text-gray-500 text-xs">
+                © 2025 Dự án KHKT - Trường THCS Nguyễn Tất Thành | Powered by ResNet18 + Gemini AI
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // ========================================
+        // GLOBAL VARIABLES
+        // ========================================
+        let isRecording = false;
+        let recognition = null;
+        let ttsEnabled = true;
+        let currentUtterance = null;
+        
+        // ========================================
+        // IMPROVED TEXT-TO-SPEECH
+        // ========================================
+        function speakText(text) {
+            if (!ttsEnabled) return;
+            
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Clean HTML tags
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            let plainText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Clean up special characters
+            plainText = plainText.replace(/[•\-\*]/g, ',').replace(/\s+/g, ' ').trim();
+            
+            if (!plainText || plainText.length < 3) return;
+            
+            // Show indicator
+            document.getElementById('tts-indicator').classList.remove('hidden');
+            
+            // Split into chunks for better TTS
+            const maxLength = 300;
+            const chunks = [];
+            let remaining = plainText;
+            
+            while (remaining.length > 0) {
+                if (remaining.length <= maxLength) {
+                    chunks.push(remaining);
+                    break;
+                }
+                let splitIndex = remaining.lastIndexOf('.', maxLength);
+                if (splitIndex === -1) splitIndex = remaining.lastIndexOf(',', maxLength);
+                if (splitIndex === -1) splitIndex = maxLength;
+                chunks.push(remaining.substring(0, splitIndex + 1));
+                remaining = remaining.substring(splitIndex + 1).trim();
             }
-        });
-
-        // Handle symptom form
-        document.getElementById('symptomForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const checkboxes = this.querySelectorAll('input[type="checkbox"]:checked');
-            const symptoms = Array.from(checkboxes).map(cb => cb.value);
-
-            if (symptoms.length === 0) {
-                alert("Bạn chưa chọn bất kỳ triệu chứng nào. Vui lòng chọn ít nhất một dấu hiệu.");
+            
+            let chunkIndex = 0;
+            
+            function speakNextChunk() {
+                if (chunkIndex >= chunks.length || !ttsEnabled) {
+                    document.getElementById('tts-indicator').classList.add('hidden');
+                    return;
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+                utterance.lang = 'vi-VN';
+                utterance.rate = 0.85;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                // Get Vietnamese voice
+                const voices = window.speechSynthesis.getVoices();
+                const viVoice = voices.find(v => v.lang.includes('vi')) || voices.find(v => v.lang.includes('en'));
+                if (viVoice) utterance.voice = viVoice;
+                
+                utterance.onend = function() {
+                    chunkIndex++;
+                    speakNextChunk();
+                };
+                
+                utterance.onerror = function() {
+                    document.getElementById('tts-indicator').classList.add('hidden');
+                };
+                
+                currentUtterance = utterance;
+                window.speechSynthesis.speak(utterance);
+            }
+            
+            // Start speaking
+            setTimeout(speakNextChunk, 100);
+        }
+        
+        // ========================================
+        // VOICE RECOGNITION
+        // ========================================
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'vi-VN';
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                
+                recognition.onstart = function() {
+                    isRecording = true;
+                    document.getElementById('voice-btn').classList.add('recording', 'recording-animation');
+                    document.getElementById('voice-icon').className = 'fas fa-stop text-lg';
+                    document.getElementById('voice-status').classList.remove('hidden');
+                    document.getElementById('voice-status-text').textContent = 'Đang lắng nghe...';
+                };
+                
+                recognition.onresult = function(event) {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    document.getElementById('chat-input').value = transcript;
+                    document.getElementById('voice-status-text').textContent = 'Đang nhận: ' + transcript.substring(0, 30) + '...';
+                };
+                
+                recognition.onend = function() {
+                    isRecording = false;
+                    document.getElementById('voice-btn').classList.remove('recording', 'recording-animation');
+                    document.getElementById('voice-icon').className = 'fas fa-microphone text-lg';
+                    document.getElementById('voice-status').classList.add('hidden');
+                    
+                    const input = document.getElementById('chat-input').value.trim();
+                    if (input) {
+                        setTimeout(() => {
+                            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+                        }, 300);
+                    }
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    isRecording = false;
+                    document.getElementById('voice-btn').classList.remove('recording', 'recording-animation');
+                    document.getElementById('voice-icon').className = 'fas fa-microphone text-lg';
+                    document.getElementById('voice-status').classList.add('hidden');
+                    
+                    if (event.error === 'not-allowed') {
+                        alert('Vui lòng cho phép trình duyệt truy cập microphone.');
+                    }
+                };
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // ========================================
+        // EVENT HANDLERS
+        // ========================================
+        
+        // Voice button
+        document.getElementById('voice-btn').addEventListener('click', function() {
+            if (!recognition && !initVoiceRecognition()) {
+                alert('Trình duyệt không hỗ trợ nhận dạng giọng nói. Vui lòng dùng Chrome hoặc Edge.');
                 return;
             }
-
-            const resultDiv = document.getElementById('symptom-result');
+            if (isRecording) recognition.stop();
+            else recognition.start();
+        });
+        
+        // Global TTS Toggle
+        document.getElementById('global-tts-toggle').addEventListener('click', function() {
+            ttsEnabled = !ttsEnabled;
+            const icon = document.getElementById('global-tts-icon');
+            const text = document.getElementById('global-tts-text');
+            if (ttsEnabled) {
+                icon.className = 'fas fa-volume-up mr-2';
+                text.textContent = 'Loa: BẬT';
+                this.classList.remove('bg-red-500/30');
+                this.classList.add('bg-white/20');
+            } else {
+                icon.className = 'fas fa-volume-mute mr-2';
+                text.textContent = 'Loa: TẮT';
+                this.classList.remove('bg-white/20');
+                this.classList.add('bg-red-500/30');
+                window.speechSynthesis.cancel();
+                document.getElementById('tts-indicator').classList.add('hidden');
+            }
+        });
+        
+        // File input
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files[0]) showPreview(e.target.files[0]);
+        });
+        
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-blue-500', 'bg-blue-50'); });
+        dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('border-blue-500', 'bg-blue-50'); });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            if (e.dataTransfer.files[0]?.type.startsWith('image/')) {
+                fileInput.files = e.dataTransfer.files;
+                showPreview(e.dataTransfer.files[0]);
+            }
+        });
+        
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-img').src = e.target.result;
+                document.getElementById('image-preview').classList.remove('hidden');
+                document.getElementById('file-label').innerHTML = `
+                    <div class="text-green-600"><i class="fas fa-check-circle text-3xl"></i></div>
+                    <p class="text-sm font-medium text-gray-700 mt-1">${file.name}</p>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // ========================================
+        // COMBINED ANALYSIS (Image + Symptoms)
+        // ========================================
+        document.getElementById('combined-analysis-btn').addEventListener('click', async function() {
+            const symptoms = Array.from(document.querySelectorAll('#symptomForm input:checked')).map(cb => cb.value);
+            const imageFile = document.getElementById('file-input').files[0];
+            
+            if (!imageFile && symptoms.length === 0) {
+                alert('Vui lòng tải ảnh xoắn ốc hoặc chọn ít nhất một triệu chứng để phân tích.');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('combined-result');
+            resultDiv.classList.remove('hidden');
             resultDiv.innerHTML = `
-                <div class="flex items-center justify-center p-5 bg-teal-50 rounded-xl">
-                    <div class="flex items-center space-x-3">
-                        <i class="fas fa-spinner fa-spin text-teal-600 text-2xl"></i>
-                        <p class="text-teal-700 font-semibold text-base">Đang phân tích triệu chứng...</p>
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                    <div class="flex items-center justify-center p-8">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin text-indigo-600 text-4xl mb-3"></i>
+                            <p class="text-indigo-700 font-semibold">Đang phân tích tổng hợp...</p>
+                            <p class="text-gray-500 text-sm mt-1">Kết hợp nhận diện ảnh + triệu chứng</p>
+                        </div>
                     </div>
                 </div>
             `;
-
-            fetch('/analyze_symptoms', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ symptoms: symptoms })
-            })
-            .then(response => response.json())
-            .then(data => {
+            
+            const formData = new FormData();
+            if (imageFile) formData.append('image', imageFile);
+            formData.append('symptoms', JSON.stringify(symptoms));
+            
+            try {
+                const response = await fetch('/combined_analysis', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
                 if (data.error) {
-                    resultDiv.innerHTML = `<div class="p-5 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-xl font-medium">${data.error}</div>`;
+                    resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-5 rounded-xl text-red-700">${data.error}</div>`;
                 } else {
-                    // Hiển thị kết quả phân tích triệu chứng
                     resultDiv.innerHTML = `
-                        <div class="bg-gradient-to-br from-teal-50 to-emerald-50 p-6 rounded-2xl border-2 border-teal-200 shadow-lg mt-5">
-                            <h3 class="text-xl font-bold mb-4 text-teal-800 flex items-center">
-                                <div class="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-poll-h text-white text-sm"></i>
-                                </div>
-                                Kết quả Phân tích
+                        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 space-y-4">
+                            <h3 class="text-xl font-bold text-indigo-800 flex items-center border-b pb-3">
+                                <i class="fas fa-clipboard-check mr-3 text-2xl"></i>
+                                Kết quả Phân tích Tổng hợp
                             </h3>
-                            <div class="text-base leading-loose text-gray-800 prose-custom bg-white p-5 rounded-xl shadow-sm">
-                                ${data.analysis} 
+                            
+                            ${data.image_result ? `
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-xl">
+                                    <p class="text-xs text-gray-500 mb-2 font-medium">Ảnh đã phân tích</p>
+                                    <img src="data:image/jpeg;base64,${data.image_base64}" class="w-full h-40 object-contain rounded-lg">
+                                </div>
+                                <div class="bg-gradient-to-r ${data.image_result.includes('Healthy') ? 'from-green-50 to-emerald-50 border-green-300' : 'from-red-50 to-orange-50 border-red-300'} p-4 rounded-xl border-2">
+                                    <h4 class="font-bold ${data.image_result.includes('Healthy') ? 'text-green-800' : 'text-red-800'} mb-2">
+                                        <i class="fas ${data.image_result.includes('Healthy') ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i>
+                                        Kết quả Nhận diện Ảnh
+                                    </h4>
+                                    <p class="text-sm ${data.image_result.includes('Healthy') ? 'text-green-700' : 'text-red-700'}">${data.image_result}</p>
+                                    <p class="text-sm font-medium mt-2">Độ tin cậy: ${(data.confidence * 100).toFixed(1)}%</p>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="prose-custom bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-200">
+                                <h4 class="font-bold text-indigo-800 mb-3 flex items-center">
+                                    <i class="fas fa-brain mr-2"></i>Phân tích AI Tổng hợp
+                                </h4>
+                                <div class="text-gray-800 leading-relaxed">${data.analysis}</div>
                             </div>
                         </div>
                     `;
-                    // data.analysis trả về HTML từ server
+                    
+                    // Speak the result
+                    speakText(data.analysis);
                 }
-            })
-            .catch(error => {
-                resultDiv.innerHTML = '<div class="p-5 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-xl font-medium">Lỗi kết nối. Vui lòng thử lại.</div>';
-            });
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-5 rounded-xl text-red-700">Lỗi kết nối. Vui lòng thử lại.</div>`;
+            }
         });
-
-        // Handle predict form
-        document.getElementById('upload-form').addEventListener('submit', function(e) {
+        
+        // ========================================
+        // CHAT FORM
+        // ========================================
+        document.getElementById('chat-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="flex items-center justify-center p-5 bg-blue-50 rounded-xl">
-                    <div class="flex items-center space-x-3">
-                        <i class="fas fa-spinner fa-spin text-blue-600 text-2xl"></i>
-                        <p class="text-blue-700 font-semibold text-base">Đang xử lý và phân tích ảnh...</p>
-                    </div>
-                </div>
-            `;
-
-            fetch('/predict', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    resultDiv.innerHTML = `<div class="p-5 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-xl font-medium">${data.error}</div>`;
-                } else {
-                    // Xác định màu sắc dựa trên label
-                    let labelColor = data.label.toLowerCase().includes('healthy') ? 'text-green-600' : 'text-red-600';
-                    let confidentColor = data.confident > 0.8 ? 'text-green-700' : (data.confident > 0.5 ? 'text-yellow-600' : 'text-red-600');
-
-                    resultDiv.innerHTML = `
-                        <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 rounded-2xl border-2 border-blue-200 shadow-xl">
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div class="flex flex-col">
-                                    <div class="bg-white p-3 rounded-xl shadow-md mb-4">
-                                        <img src="data:image/jpeg;base64,${data.image_base64}" class="w-full h-auto rounded-lg object-cover">
-                                    </div>
-                                </div>
-                                
-                                <div class="flex flex-col justify-between">
-                                    <div>
-                                        <div class="bg-white p-5 rounded-xl shadow-md mb-4">
-                                            <h3 class="text-2xl font-bold ${labelColor} mb-3 flex items-center">
-                                                <i class="fas fa-diagnoses mr-3"></i>
-                                                ${data.label}
-                                            </h3>
-                                            
-                                            <div class="mb-4">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <span class="text-base font-semibold text-gray-700">Độ tin cậy:</span>
-                                                    <span class="text-xl font-bold ${confidentColor}">${(data.confident * 100).toFixed(1)}%</span>
-                                                </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-4 shadow-inner">
-                                                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-4 rounded-full transition-all duration-700 shadow-sm" style="width: ${data.confident * 100}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-white p-5 rounded-xl shadow-md">
-                                            <h4 class="font-bold text-lg text-gray-800 mb-4 flex items-center border-b pb-3">
-                                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-info-circle text-blue-600"></i>
-                                                </div>
-                                                Thông tin Chi tiết
-                                            </h4>
-                                            <div class="text-base text-gray-700 leading-loose prose-custom">
-                                                ${data.treatment}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                resultDiv.innerHTML = '<div class="p-5 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-xl font-medium">Lỗi xử lý. Vui lòng thử lại.</div>';
-            });
-        });
-
-        // Handle chat
-        document.getElementById('chat-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const messageInput = this.message;
-            const message = messageInput.value.trim();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
             if (!message) return;
-
+            
             const messagesDiv = document.getElementById('chat-messages');
             
             // Add user message
             messagesDiv.innerHTML += `
-                <div class="flex justify-end mb-4">
-                    <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl px-5 py-3 max-w-md shadow-md" style="border-bottom-right-radius: 0.5rem;">
-                        <div class="text-base leading-relaxed">${message}</div>
+                <div class="flex justify-end mb-3">
+                    <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-2xl px-4 py-2 max-w-xs shadow-md text-sm" style="border-bottom-right-radius: 0.5rem;">
+                        ${message}
                     </div>
                 </div>
             `;
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            messageInput.value = '';
-
-            // Add loading indicator
+            input.value = '';
+            
+            // Loading
             messagesDiv.innerHTML += `
-                <div class="flex justify-start mb-4" id="loading-bubble">
-                    <div class="bg-white text-gray-800 rounded-2xl px-5 py-3 max-w-xs shadow-md border border-gray-100">
-                        <div class="flex space-x-1">
-                            <i class="fas fa-circle text-xs text-gray-400 animate-bounce" style="animation-delay: 0s;"></i>
-                            <i class="fas fa-circle text-xs text-gray-400 animate-bounce" style="animation-delay: 0.15s;"></i>
-                            <i class="fas fa-circle text-xs text-gray-400 animate-bounce" style="animation-delay: 0.3s;"></i>
+                <div class="flex justify-start mb-3" id="loading-bubble">
+                    <div class="bg-white rounded-2xl px-4 py-3 shadow-md border border-gray-100">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-circle text-xs text-purple-400 animate-bounce"></i>
+                            <i class="fas fa-circle text-xs text-purple-400 animate-bounce" style="animation-delay: 0.1s;"></i>
+                            <i class="fas fa-circle text-xs text-purple-400 animate-bounce" style="animation-delay: 0.2s;"></i>
                         </div>
                     </div>
                 </div>
             `;
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Remove loading bubble
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                
                 document.getElementById('loading-bubble')?.remove();
-
-                // Add AI response
+                
+                // Process response to embed YouTube videos
+                let processedResponse = processYouTubeVideos(data.response);
+                
                 messagesDiv.innerHTML += `
-                    <div class="flex justify-start mb-4">
-                        <div class="bg-white text-gray-800 rounded-2xl px-5 py-3 max-w-lg shadow-md border border-gray-100" style="border-bottom-left-radius: 0.5rem;">
-                            <div class="text-base leading-loose prose-custom">${data.response}</div>
+                    <div class="flex justify-start mb-3">
+                        <div class="bg-white text-gray-800 rounded-2xl px-4 py-3 max-w-md shadow-md border border-gray-100 text-sm" style="border-bottom-left-radius: 0.5rem;">
+                            <div class="flex items-center mb-2">
+                                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                                    <i class="fas fa-robot text-purple-600 text-xs"></i>
+                                </div>
+                                <span class="font-semibold text-purple-800 text-xs">Trợ lý AI</span>
+                            </div>
+                            <div class="prose-custom leading-relaxed">${processedResponse}</div>
                         </div>
                     </div>
                 `;
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            })
-            .catch(error => {
-                // Remove loading bubble
-                document.getElementById('loading-bubble')?.remove();
                 
+                // Speak response
+                speakText(data.response);
+                
+            } catch (error) {
+                document.getElementById('loading-bubble')?.remove();
                 messagesDiv.innerHTML += `
-                    <div class="flex justify-start mb-4">
-                        <div class="bg-red-50 text-red-800 rounded-2xl px-5 py-3 max-w-xs border-l-4 border-red-500 font-medium">
+                    <div class="flex justify-start mb-3">
+                        <div class="bg-red-50 text-red-700 rounded-2xl px-4 py-2 text-sm border-l-4 border-red-500">
                             Lỗi kết nối. Vui lòng thử lại.
                         </div>
                     </div>
                 `;
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        });
+        
+        // ========================================
+        // YOUTUBE VIDEO EMBED IN CHAT
+        // ========================================
+        function processYouTubeVideos(text) {
+            // Pattern: [VIDEO:VIDEO_ID:Title]
+            const videoPattern = /\[VIDEO:([a-zA-Z0-9_-]+):([^\]]+)\]/g;
+            
+            return text.replace(videoPattern, function(match, videoId, title) {
+                return `
+                    <div class="my-3 rounded-xl overflow-hidden shadow-md bg-gray-900">
+                        <div class="relative" style="padding-bottom: 56.25%; height: 0;">
+                            <iframe 
+                                src="https://www.youtube.com/embed/${videoId}" 
+                                title="${title}"
+                                class="absolute top-0 left-0 w-full h-full"
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                        <div class="bg-red-600 text-white px-3 py-2 text-xs font-medium flex items-center">
+                            <i class="fab fa-youtube mr-2"></i>${title}
+                        </div>
+                    </div>
+                `;
             });
+        }
+        
+        // ========================================
+        // INIT
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initVoiceRecognition();
+            if ('speechSynthesis' in window) {
+                speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+                // Preload voices
+                speechSynthesis.getVoices();
+            }
         });
     </script>
 </body>

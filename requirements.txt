@@ -1,9 +1,24 @@
-# requirements.txt - PHIÊN BẢN SIÊU GỌN CHO RENDER
-Flask
-gunicorn
-python-dotenv
-google-generativeai
-torch
-torchvision
-Pillow
-numpy
+# requirements.txt - HỆ THỐNG PHÁT HIỆN SỚM PARKINSON v2.0
+# Cập nhật: 07/01/2026
+
+# Web Framework
+Flask>=2.3.0
+gunicorn>=21.0.0
+
+# Environment
+python-dotenv>=1.0.0
+
+# Google Gemini AI
+google-generativeai>=0.3.0
+
+# Deep Learning - PyTorch & ResNet18
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Image Processing
+Pillow>=10.0.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+
+# Optional: For better performance
+# opencv-python-headless>=4.8.0  # Use this instead of opencv-python for servers
