@@ -10,9 +10,7 @@ Phiên bản cải tiến với:
 import os
 import base64
 import io
-import torch
-import torchvision.transforms as transforms
-from torchvision import models
+import random
 from PIL import Image
 import cv2
 import numpy as np
@@ -40,24 +38,9 @@ else:
     print("⚠️ Warning: GOOGLE_API_KEY not found")
 
 # ========================================
-# LOAD PYTORCH MODEL
+# LOAD PYTORCH MODEL (REMOVED FOR DEMO)
 # ========================================
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "MoHinh", "mo_hinh_AI.pth")
-
-model = None
-if os.path.exists(MODEL_PATH):
-    try:
-        model = models.resnet18()
-        model.fc = torch.nn.Linear(model.fc.in_features, 2)
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
-        model = model.to(DEVICE)
-        model.eval()
-        print(f"✅ Model loaded from {MODEL_PATH}")
-    except Exception as e:
-        print(f"❌ Error loading model: {e}")
-else:
-    print(f"❌ Model file not found: {MODEL_PATH}")
+# Model loading removed for demo purposes
 
 CLASS_NAMES = ["Healthy (Bình thường)", "Parkinson (Có dấu hiệu)"]
 
@@ -104,37 +87,21 @@ def preprocess_spiral_image(image_pil):
     return processed_pil, thresh
 
 # ========================================
-# IMAGE PREDICTION
+# IMAGE PREDICTION (MOCKED FOR DEMO)
 # ========================================
 def predict_image_pil(image_pil):
-    """Predict từ PIL Image"""
-    if model is None:
-        return None, 0.0, None
+    """Mock prediction - always returns Healthy for demo"""
+    # Mock result: Always Healthy with random confidence 85-99%
+    confidence = random.uniform(0.85, 0.99)
     
+    # Process image for display (keep preprocessing for demo)
     try:
-        # Preprocess
         processed_pil, _ = preprocess_spiral_image(image_pil)
-        
-        # Transform for model
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-        
-        img_tensor = transform(processed_pil).unsqueeze(0).to(DEVICE)
-        
-        # Predict
-        with torch.no_grad():
-            outputs = model(img_tensor)
-            probs = torch.softmax(outputs, dim=1)
-            confidence, predicted = torch.max(probs, 1)
-            
-        return CLASS_NAMES[predicted.item()], confidence.item(), processed_pil
-        
     except Exception as e:
-        print(f"Prediction error: {e}")
-        return None, 0.0, None
+        print(f"Image processing error: {e}")
+        processed_pil = image_pil  # fallback to original
+    
+    return CLASS_NAMES[0], confidence, processed_pil
 
 # ========================================
 # SYSTEM PROMPTS - OPTIMIZED
@@ -393,7 +360,7 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     print("🧠 HỆ THỐNG HỖ TRỢ PHÁT HIỆN SỚM PARKINSON")
     print("="*60)
-    print(f"📊 Device: {DEVICE}")
+    print("📊 Demo Mode: Always Healthy")
     print(f"🤖 AI Model: {GEMINI_MODEL}")
     print(f"🔗 URL: http://127.0.0.1:5000")
     print("="*60 + "\n")
